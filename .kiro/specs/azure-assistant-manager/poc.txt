@@ -1,0 +1,12 @@
+There will be two documents per product, One is Contractual commitments and second is Service description document.
+Contractual commitment will have the list of Subscription content, Service Id, Subscription Metrics which defines the 
+peak limit for metrics for example 11 million peak order lines, 2500 named users, 6 locations/warehouses, it defines the consumption
+limit for mentioned item like order line, warehouse etc. Contractual commitments are non negotiable and are reset on the 1st of every month.
+Service description document list the contstraints for various aspect of products such as for categories
+enterprise level service volume constraint, Site level service rate constraints and each category will have limit mentioned for
+different activity for example, 2 gb egress per month or 45 thousand items per month indicating the constraint at hour level
+and some constraint are time bound like every hour only 10 or 100 per minute, kind of time series data and apply at site level. We should show the 
+time series data for selected sites in the filter.
+Each product will have it's own contractual commitment and service level descriptions and they can have their own
+consumption limits on different parameter of usage.
+Our aim is to build a kpi dashboard for products which shows the max consumption limit per unit time versus actual consumption.
