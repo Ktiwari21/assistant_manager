@@ -26,6 +26,7 @@ graph TB
     
     subgraph "Data Processing Layer"
         API_CLIENT[API Client Service]
+        PUSH_API[Push Data API]
         SCHEDULER[Scheduler Service]
     end
     
@@ -34,10 +35,16 @@ graph TB
         CACHE[Redis Cache]
     end
     
-    subgraph "External Product APIs"
+    subgraph "External Product APIs (Pull)"
         API_1[Product 1 API]
         API_2[Product 2 API]
         API_3[Product 3 API]
+    end
+    
+    subgraph "Product Teams (Push)"
+        PROD_1[Product 1 Push]
+        PROD_2[Product 2 Push]
+        PROD_3[Product 3 Push]
     end
     
     UI --> API_GW
@@ -57,13 +64,20 @@ graph TB
     API_CLIENT --> API_2
     API_CLIENT --> API_3
     
+    PROD_1 --> PUSH_API
+    PROD_2 --> PUSH_API
+    PROD_3 --> PUSH_API
+    
+    PUSH_API --> CSC_DB
+    
     SCHEDULER --> CSC_DB
     
     CSC_DB --> CACHE
 ```
 
-### Data Flow Architecture (Based on Discussion Notes)
+### Enhanced Data Flow Architecture (Pull & Push)
 
+**Pull-based Data Flow:**
 ```mermaid
 sequenceDiagram
     participant UI as CSC Dashboard UI
@@ -89,13 +103,47 @@ sequenceDiagram
         DB-->>MS: Metric limits & thresholds
         
         MS->>MS: Calculate utilization %
-        MS->>MS: Evaluate against thresholds
+        MS->>MS: Combine config + usage data
         MS->>Cache: Store processed data
     end
     
-    MS-->>UI: Enriched consumption data
+    MS-->>UI: Enriched consumption data with config
     
-    Note over MS,DB: Store usage against metrics<br/>OrderLines monthly = 1000
+    Note over MS,UI: UI receives combined metric<br/>configuration + usage data
+```
+
+**Push-based Data Flow:**
+```mermaid
+sequenceDiagram
+    participant PROD as Product Team
+    participant PUSH_API as Push Data API
+    participant DB as CSC DB
+    participant UI as CSC Dashboard UI
+    participant MS as Metrics Service
+    participant Cache as Redis Cache
+    
+    PROD->>PUSH_API: POST /api/push-consumption
+    PUSH_API->>PUSH_API: Validate payload
+    PUSH_API->>DB: Store consumption data
+    PUSH_API-->>PROD: Acknowledgment
+    
+    UI->>MS: Request consumption data
+    MS->>Cache: Check cached data
+    
+    alt Cache Miss
+        MS->>DB: Get pushed consumption data
+        DB-->>MS: Latest usage data
+        MS->>DB: Get metric configurations
+        DB-->>MS: Metric limits & thresholds
+        
+        MS->>MS: Calculate utilization %
+        MS->>MS: Combine config + usage data
+        MS->>Cache: Store processed data
+    end
+    
+    MS-->>UI: Enriched consumption data with config
+    
+    Note over MS,UI: UI receives combined metric<br/>configuration + usage data
 ```
 
 ### Technology Stack
@@ -692,13 +740,114 @@ CREATE TABLE api_integrations (
 
 The system ingests consumption data from product teams via standardized APIs to provide comprehensive monitoring:
 
-#### Primary Data Source
+#### Primary Data Sources
 
-**Product Consumption APIs**
+**Option 1: Product Consumption APIs (Pull-based)**
 - Each product team provides a dedicated API endpoint that exposes their consumption metrics
 - APIs follow a standardized contract for consistent data ingestion
 - Support both real-time streaming and batch data retrieval patterns
 - Include all relevant consumption metrics as defined in their contractual commitments and service constraints
+
+**Option 2: Product Data Push (Push-based) - New**
+- Product teams push their time series or aggregated consumption data directly to the dashboard system
+- Data is pushed via simple REST API endpoints and stored directly in internal database
+- Supports both raw time series data and pre-aggregated metrics
+- Enables mapping of pushed data against existing consumption metric configurations
+- Eliminates need for complex webhook management or message queue infrastructure
+
+#### Data Ingestion Patterns
+
+The system supports flexible ingestion patterns to accommodate different product team capabilities:
+
+```typescript
+interface ProductAPIIngestionStrategy {
+  // Polling-based ingestion for products with REST APIs
+  pollingIngestion: {
+    endpoint: string
+    schedule: 'every_minute' | 'every_5_minutes' | 'hourly'
+    authentication: APIAuthentication
+  }
+  
+  // Push-based ingestion via REST API (simplified approach)
+  pushIngestion: {
+    pushEndpoint: string
+    authentication: PushAuthentication
+    dataFormat: 'time_series' | 'aggregated' | 'current_value'
+  }
+}
+```
+
+#### Push-Based Data Contracts (Simplified)
+
+**Push Data API Contract:**
+```typescript
+interface PushDataPayload {
+  // Product identification
+  product_id: string
+  organization_id: string
+  site_id?: string // Optional for site-specific data
+  
+  // Timestamp and metadata
+  timestamp: Date
+  data_source: string
+  data_quality: 'high' | 'medium' | 'low'
+  
+  // Consumption metrics
+  metrics: PushedMetric[]
+  
+  // Optional batch information
+  batch_info?: {
+    batch_id: string
+    sequence_number: number
+    total_in_batch: number
+  }
+}
+
+interface PushedMetric {
+  metric_name: string
+  metric_type: 'contractual' | 'service_constraint' | 'kpi'
+  
+  // Data can be either current value or time series
+  data_type: 'current_value' | 'time_series' | 'aggregated'
+  
+  // Current value format
+  current_value?: number
+  limit_value?: number
+  
+  // Time series format
+  time_series_data?: TimeSeriesPoint[]
+  
+  // Pre-aggregated data format
+  aggregated_data?: {
+    aggregation_level: 'hourly' | 'daily' | 'monthly'
+    aggregation_method: 'sum' | 'average' | 'max' | 'min'
+    time_range: {
+      start_date: Date
+      end_date: Date
+    }
+    aggregated_value: number
+  }
+  
+  // Metadata
+  unit: string
+  confidence_score?: number
+}
+
+interface PushDataResponse {
+  success: boolean
+  message: string
+  processed_metrics: number
+  stored_data_points: number
+  errors: PushError[]
+  request_id: string
+}
+
+interface PushError {
+  metric_name: string
+  error_type: 'validation_failed' | 'mapping_failed' | 'storage_failed'
+  error_message: string
+}
+```
 
 #### API Contract Specification (Based on Discussion Notes)
 
@@ -840,7 +989,126 @@ interface TimelineEntry {
 2. **Static Metrics**: Include simple `value` field with current value
 3. **Mixed Format**: Some metrics may have both `value` and `timeline` fields
 
-#### Enhanced Data Processing for UI Optimization
+#### Enhanced UI Response Format (Configuration + Usage Combined)
+
+**Unified Dashboard Response:**
+The service performs all necessary slicing and dicing to combine metric configuration details with actual usage data, providing a complete response ready for UI consumption:
+
+```typescript
+interface DashboardResponse {
+  organization_info: OrganizationInfo
+  products: ProductDashboardData[]
+  global_alerts: AlertSummary
+  last_updated: Date
+  data_freshness: DataFreshness
+}
+
+interface ProductDashboardData {
+  // Product configuration details
+  product_info: {
+    product_id: string
+    product_name: string
+    product_type: string
+    status: string
+  }
+  
+  // Combined metric configuration + usage data
+  contractual_commitments: EnrichedContractualMetric[]
+  enterprise_constraints: EnrichedEnterpriseMetric[]
+  site_constraints: EnrichedSiteMetric[]
+  
+  // Product-level aggregations
+  overall_health: 'healthy' | 'warning' | 'critical'
+  total_metrics: number
+  critical_metrics_count: number
+  utilization_summary: UtilizationSummary
+}
+
+interface EnrichedContractualMetric {
+  // Configuration details
+  metric_name: string
+  commitment_type: string
+  limit_value: number
+  unit: string
+  reset_frequency: string
+  reset_day: number
+  is_negotiable: boolean
+  contract_reference: string
+  
+  // Current usage data
+  current_value: number
+  utilization_percentage: number
+  status: 'healthy' | 'warning' | 'critical'
+  
+  // Trend analysis
+  trend: {
+    direction: 'increasing' | 'decreasing' | 'stable'
+    percentage_change: number
+    period: string
+  }
+  
+  // Timeline data for charts
+  timeline_data?: ProcessedTimelineEntry[]
+  
+  // Alert information
+  active_alerts: AlertInfo[]
+  
+  // Display configuration
+  display_config: MetricDisplayConfig
+  
+  // Metadata
+  last_updated: Date
+  data_quality: string
+  time_to_limit?: string
+}
+
+interface EnrichedSiteMetric {
+  // Configuration details
+  site_info: {
+    site_id: string
+    site_name: string
+    location: LocationInfo
+    site_type: string
+  }
+  
+  // Metric configuration
+  metric_name: string
+  constraint_type: string
+  limit_value: number
+  unit: string
+  time_window: string
+  scope: string
+  
+  // Site-specific overrides
+  site_specific_limits?: {
+    limit_value: number
+    warning_threshold: number
+    critical_threshold: number
+  }
+  
+  // Current usage data
+  current_value: number
+  utilization_percentage: number
+  status: 'healthy' | 'warning' | 'critical'
+  
+  // Site comparison data
+  site_ranking: {
+    position: number
+    total_sites: number
+    performance_score: number
+  }
+  
+  // Time series data for site-specific charts
+  time_series_data: ProcessedTimelineEntry[]
+  
+  // Display configuration
+  display_config: MetricDisplayConfig
+  
+  // Metadata
+  last_updated: Date
+  data_quality: string
+}
+```
 
 **Data Normalization Layer:**
 To ensure consistent UI rendering, all API responses are normalized through a processing layer that maintains the original design's flexibility:
@@ -1422,10 +1690,11 @@ interface ConfigurationService {
 }
 ```
 
-### 3. Metrics Service (Enhanced with Site-Specific Time Series Support)
+### 3. Metrics Service (Enhanced with Push/Pull Data Support)
 
 **Responsibilities:**
-- Fetch and aggregate consumption data from product APIs on-demand
+- Fetch and aggregate consumption data from product APIs on-demand (pull-based)
+- Process pushed consumption data from webhooks and message queues (push-based)
 - Process timeline data and calculate current values for each site
 - Enrich raw API data with configuration and display settings
 - Handle complex data enrichment and business logic calculations
@@ -1434,23 +1703,30 @@ interface ConfigurationService {
 **Key Interfaces:**
 ```typescript
 interface MetricsService {
-  // Core data fetching
+  // Core data fetching (pull-based)
   getCurrentConsumption(productId: string, organizationId: string): Promise<EnhancedMetric[]>
   getMetricsByOrganization(organizationId: string): Promise<EnhancedMetric[]>
   getMetricsBySite(siteId: string): Promise<EnhancedMetric[]>
+  
+  // Push-based data processing (new)
+  processPushedData(webhookPayload: WebhookDataPayload): Promise<ProcessingResult>
+  processQueueMessage(queueMessage: QueueMessage): Promise<ProcessingResult>
+  mapPushedMetricToConfiguration(pushedMetric: PushedMetric, productId: string): Promise<MetricMapping>
   
   // Site-specific time series data (requirement 4)
   getSiteTimeSeriesData(siteId: string, metricName: string, timeRange: TimeRange): Promise<TimeSeriesData>
   getMultipleSitesTimeSeriesData(siteIds: string[], metricName: string, timeRange: TimeRange): Promise<TimeSeriesData[]>
   compareSitesMetrics(siteIds: string[], metricNames: string[], timeRange: TimeRange): Promise<SiteComparisonData>
   
-  // Data processing and enrichment
+  // Data processing and enrichment (supports both pull and push)
   processProductAPIResponse(apiResponse: ProductAPIResponse[], productId: string): Promise<EnhancedMetric[]>
+  processPushedMetrics(pushedMetrics: PushedMetric[], productId: string, organizationId: string): Promise<EnhancedMetric[]>
   calculateUtilizationPercentage(current: number, limit: number | TimelineEntry[]): number
   extractCurrentValueFromTimeline(timeline: TimelineEntry[]): number
   
   // Timeline data processing
   normalizeTimelineData(timeline: TimelineEntry[]): ProcessedTimelineEntry[]
+  normalizePushedTimeSeriesData(timeSeriesData: TimeSeriesPoint[]): ProcessedTimelineEntry[]
   calculateTrendAnalysis(timeline: ProcessedTimelineEntry[]): TrendAnalysis
   
   // Site-specific data management
@@ -1461,6 +1737,181 @@ interface MetricsService {
   getAggregatedMetrics(filters: MetricFilters): Promise<AggregatedMetrics>
   getDashboardViewModel(organizationId: string): Promise<DashboardViewModel>
   getSiteDashboardViewModel(siteId: string): Promise<SiteDashboardViewModel>
+}
+
+interface ProcessingResult {
+  success: boolean
+  processed_metrics: number
+  failed_metrics: number
+  errors: ProcessingError[]
+  stored_data_points: number
+}
+
+interface ProcessingError {
+  metric_name: string
+  error_type: 'validation_failed' | 'mapping_failed' | 'storage_failed'
+  error_message: string
+  raw_data: any
+}
+
+interface MetricMapping {
+  internal_metric_name: string
+  mapped_successfully: boolean
+  configuration_found: boolean
+  site_specific_config?: SiteMetricConfig
+}
+```
+
+### 6. Push Data API Service (New - Simplified Push-based Data Ingestion)
+
+**Responsibilities:**
+- Provide REST API endpoints for product teams to push consumption data
+- Validate and authenticate incoming push data requests
+- Store pushed data directly in internal database collections
+- Provide monitoring and health check capabilities for push data ingestion
+
+**Key Interfaces:**
+```typescript
+interface PushDataAPIService {
+  // Push data endpoints
+  receivePushData(payload: PushDataPayload, headers: Record<string, string>): Promise<PushDataResponse>
+  receiveBatchPushData(batchPayload: BatchPushDataPayload): Promise<BatchPushDataResponse>
+  
+  // Authentication and validation
+  validatePushAuthentication(headers: Record<string, string>): Promise<AuthenticationResult>
+  validatePushPayload(payload: PushDataPayload): Promise<ValidationResult>
+  
+  // Data storage
+  storePushedMetrics(metrics: PushedMetric[], productId: string, organizationId: string, siteId?: string): Promise<StorageResult>
+  storeTimeSeriesData(timeSeriesData: TimeSeriesPoint[], metricName: string, siteId: string): Promise<void>
+  
+  // Monitoring and health
+  getPushDataHealth(): Promise<PushDataHealthStatus>
+  getPushDataMetrics(productId: string, timeRange: TimeRange): Promise<PushDataMetrics>
+  getFailedPushRequests(productId: string): Promise<FailedPushRequest[]>
+  
+  // Configuration management
+  configurePushEndpoint(productId: string, config: PushEndpointConfig): Promise<PushEndpoint>
+  updatePushEndpoint(endpointId: string, config: PushEndpointConfig): Promise<void>
+  deletePushEndpoint(endpointId: string): Promise<void>
+}
+
+interface BatchPushDataPayload {
+  batch_id: string
+  total_items: number
+  batch_sequence: number
+  payloads: PushDataPayload[]
+}
+
+interface BatchPushDataResponse {
+  success: boolean
+  batch_id: string
+  total_processed: number
+  total_failed: number
+  individual_results: PushDataResponse[]
+  processing_time_ms: number
+}
+
+interface AuthenticationResult {
+  authenticated: boolean
+  product_id: string
+  organization_id: string
+  permissions: string[]
+  error_message?: string
+}
+
+interface ValidationResult {
+  valid: boolean
+  errors: ValidationError[]
+  warnings: ValidationWarning[]
+}
+
+interface ValidationError {
+  field: string
+  error_type: 'required' | 'invalid_format' | 'invalid_value' | 'constraint_violation'
+  message: string
+}
+
+interface ValidationWarning {
+  field: string
+  warning_type: 'deprecated' | 'performance' | 'data_quality'
+  message: string
+}
+
+interface StorageResult {
+  success: boolean
+  stored_metrics: number
+  stored_data_points: number
+  skipped_metrics: number
+  errors: StorageError[]
+}
+
+interface StorageError {
+  metric_name: string
+  error_type: 'duplicate' | 'invalid_mapping' | 'storage_failed'
+  error_message: string
+}
+
+interface PushDataHealthStatus {
+  status: 'healthy' | 'degraded' | 'failed'
+  total_endpoints: number
+  active_endpoints: number
+  error_rate_24h: number
+  average_response_time_ms: number
+  last_successful_push: Date
+}
+
+interface PushDataMetrics {
+  product_id: string
+  total_requests: number
+  successful_requests: number
+  failed_requests: number
+  total_metrics_pushed: number
+  average_processing_time_ms: number
+  error_breakdown: Record<string, number>
+  throughput_per_hour: number
+}
+
+interface FailedPushRequest {
+  request_id: string
+  product_id: string
+  payload: PushDataPayload
+  error_message: string
+  failed_at: Date
+  retry_count: number
+  can_retry: boolean
+}
+
+interface PushEndpointConfig {
+  product_id: string
+  endpoint_name: string
+  authentication: {
+    type: 'api_key' | 'basic_auth' | 'bearer_token'
+    api_key?: string
+    username?: string
+    password?: string
+    token?: string
+  }
+  rate_limiting: {
+    requests_per_minute: number
+    burst_allowance: number
+  }
+  data_validation: {
+    strict_mode: boolean
+    required_fields: string[]
+    allowed_metric_types: string[]
+  }
+}
+
+interface PushEndpoint {
+  id: string
+  product_id: string
+  endpoint_url: string
+  endpoint_name: string
+  status: 'active' | 'inactive' | 'suspended'
+  created_at: Date
+  last_used: Date
+  total_requests: number
 }
 
 interface SiteComparisonData {

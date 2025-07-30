@@ -64,13 +64,15 @@
   - Write unit tests for all calculation logic and API integration scenarios
   - _Requirements: 1.1, 1.2, 4.1, 4.2, 6.1_
 
-- [ ] 4.2 Build site-specific metrics enrichment and business logic
-  - Implement logic to combine raw consumption data with site-specific configuration limits
+- [ ] 4.2 Build enhanced UI response format with configuration + usage data combination
+  - Implement logic to combine metric configuration details with actual usage data for UI consumption
+  - Create EnrichedContractualMetric, EnrichedEnterpriseMetric, and EnrichedSiteMetric response models
+  - Add support for unified dashboard response format that includes all necessary data for UI rendering
+  - Implement site-specific data enrichment with configuration inheritance and overrides
   - Create trend calculation algorithms for site-specific consumption pattern analysis
   - Add support for multi-site metric aggregation and comparison functionality
   - Implement site performance ranking and analytics capabilities
-  - Create cross-site data validation and consistency checking
-  - Write comprehensive unit tests for business logic and calculations
+  - Write comprehensive unit tests for business logic and UI response formatting
   - _Requirements: 1.2, 4.1, 4.2, 4.4, 6.1_
 
 - [ ] 4.3 Implement site-specific time series data management
@@ -102,9 +104,9 @@
   - Write integration tests for complete alert workflows including site-specific scenarios
   - _Requirements: 7.1, 7.2, 7.3, 7.4, 3.2_
 
-- [ ] 6. Develop Enhanced API Client for real-time data fetching
+- [ ] 6. Develop Enhanced Data Ingestion Layer (Pull & Push)
 
-- [ ] 6.1 Implement product API integration layer with timeline support
+- [ ] 6.1 Implement product API integration layer with timeline support (Pull-based)
   - Create HTTP client for on-demand product consumption API calls with timeline data support
   - Implement support for different authentication methods (API keys, OAuth 2.0)
   - Add connection pooling and request optimization for multiple concurrent API calls
@@ -113,25 +115,38 @@
   - Write unit tests for API integration and error handling scenarios
   - _Requirements: 6.2, 1.1, 4.1_
 
-- [ ] 6.2 Build enhanced data validation and enrichment pipeline
-  - Implement consumption data validation against API contracts with timeline support
-  - Create data normalization and enrichment logic for timeline and static value responses
+- [ ] 6.2 Build push data API for direct database storage (Push-based)
+  - Create REST API endpoints for receiving pushed consumption data from product teams
+  - Implement push data payload validation against simplified data contracts
+  - Add direct database storage for pushed consumption metrics and time series data
+  - Create push data authentication and rate limiting mechanisms
+  - Implement batch processing support for multiple metrics in single request
+  - Add push data monitoring and health check capabilities
+  - Write unit tests for push API processing and error handling
+  - _Requirements: 6.2, 1.1, 4.1, 4.2_
+
+- [ ] 6.3 Build unified data validation and enrichment pipeline
+  - Implement consumption data validation for both pull and push data sources
+  - Create data normalization logic for timeline, static value, and pushed metric responses
   - Add support for extracting current values from timeline data structures
-  - Implement site-specific data enrichment and routing logic
-  - Add error handling and retry mechanisms for failed API calls
+  - Implement pushed metric mapping against existing consumption metric configurations
+  - Add site-specific data enrichment and routing logic for both ingestion methods
   - Create data quality assessment and confidence scoring
-  - Write integration tests for complete API client functionality
+  - Add error handling and retry mechanisms for failed data processing
+  - Write comprehensive integration tests for both pull and push data flows
   - _Requirements: 6.2, 6.4, 4.1, 4.2_
 
 - [ ] 7. Create Enhanced Dashboard Service and API Gateway
 
-- [ ] 7.1 Implement dashboard REST API endpoints with site-specific support
-  - Create endpoints for organization, product, and site overview with consumption metrics
-  - Implement site-specific time-series data retrieval with filtering capabilities
-  - Add endpoints for multi-site comparison and analytics
-  - Create site performance ranking and dashboard view model endpoints
+- [ ] 7.1 Implement enhanced dashboard REST API endpoints with unified response format
+  - Create endpoints that return combined metric configuration + usage data for optimal UI consumption
+  - Implement DashboardResponse, ProductDashboardData, and enriched metric response models
+  - Add endpoints for organization overview with complete product and site data
+  - Create site-specific time-series data retrieval with filtering capabilities
+  - Add endpoints for multi-site comparison and analytics with enriched data
+  - Implement site performance ranking and dashboard view model endpoints
   - Add real-time WebSocket connections for live updates with site context
-  - Write unit tests for all API endpoints and response formats
+  - Write unit tests for all API endpoints and enhanced response formats
   - _Requirements: 1.1, 1.2, 4.1, 4.2, 4.4, 6.2_
 
 - [ ] 7.2 Add enhanced caching layer and performance optimization
