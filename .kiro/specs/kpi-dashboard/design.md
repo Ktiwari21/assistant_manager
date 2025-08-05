@@ -63,7 +63,7 @@ graph TB
 - **UI Components**: @jda/lui-common-component-library-mui5 (primary UI library)
 - **Icons**: @jda/lui-common-icon-library-mui5 (primary icon library)
 - **Testing**: Vitest + React Testing Library
-- **Styling**: Tailwind CSS with custom design system
+- **Styling**: JDA LUI palette with tss-react/mui makeStyles and separate style.ts files for component-level styling
 - **Build Tools**: Vite with ESLint and Prettier
 
 **Component Library Usage**:
@@ -1117,6 +1117,642 @@ const AppRouter = () => (
     </Routes>
   </Router>
 )
+```
+
+## Styling Architecture with JDA LUI and tss-react/mui
+
+### Component Styling Structure
+
+Each component follows a consistent styling pattern using JDA LUI palette and tss-react/mui makeStyles:
+
+```
+components/
+├── customers/
+│   ├── CustomerTable.tsx
+│   └── CustomerTable.style.ts
+├── kpis/
+│   ├── KPICard.tsx
+│   └── KPICard.style.ts
+└── charts/
+    ├── TimeSeriesChart.tsx
+    └── TimeSeriesChart.style.ts
+```
+
+### JDA LUI Theme Integration
+
+```typescript
+// theme/jdaTheme.ts
+import { createTheme } from '@jda/lui-common-component-library-mui5'
+
+export const jdaTheme = createTheme({
+  palette: {
+    primary: {
+      main: '#1976d2',
+      light: '#42a5f5',
+      dark: '#1565c0',
+      contrastText: '#ffffff'
+    },
+    secondary: {
+      main: '#dc004e',
+      light: '#ff5983',
+      dark: '#9a0036',
+      contrastText: '#ffffff'
+    },
+    success: {
+      main: '#2e7d32',
+      light: '#4caf50',
+      dark: '#1b5e20',
+      contrastText: '#ffffff'
+    },
+    warning: {
+      main: '#ed6c02',
+      light: '#ff9800',
+      dark: '#e65100',
+      contrastText: '#ffffff'
+    },
+    error: {
+      main: '#d32f2f',
+      light: '#ef5350',
+      dark: '#c62828',
+      contrastText: '#ffffff'
+    },
+    info: {
+      main: '#0288d1',
+      light: '#03a9f4',
+      dark: '#01579b',
+      contrastText: '#ffffff'
+    },
+    grey: {
+      50: '#fafafa',
+      100: '#f5f5f5',
+      200: '#eeeeee',
+      300: '#e0e0e0',
+      400: '#bdbdbd',
+      500: '#9e9e9e',
+      600: '#757575',
+      700: '#616161',
+      800: '#424242',
+      900: '#212121'
+    }
+  },
+  typography: {
+    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
+    h1: {
+      fontSize: '2.125rem',
+      fontWeight: 300,
+      lineHeight: 1.167
+    },
+    h2: {
+      fontSize: '1.5rem',
+      fontWeight: 400,
+      lineHeight: 1.2
+    },
+    h3: {
+      fontSize: '1.25rem',
+      fontWeight: 500,
+      lineHeight: 1.6
+    },
+    body1: {
+      fontSize: '1rem',
+      fontWeight: 400,
+      lineHeight: 1.5
+    },
+    body2: {
+      fontSize: '0.875rem',
+      fontWeight: 400,
+      lineHeight: 1.43
+    }
+  },
+  spacing: 8,
+  breakpoints: {
+    values: {
+      xs: 0,
+      sm: 600,
+      md: 900,
+      lg: 1200,
+      xl: 1536
+    }
+  }
+})
+```
+
+### Component Styling Examples
+
+#### 1. KPI Card Styling with JDA LUI Palette
+
+```typescript
+// components/kpis/KPICard.style.ts
+import { makeStyles } from 'tss-react/mui'
+import { Theme } from '@jda/lui-common-component-library-mui5'
+
+export const useKPICardStyles = makeStyles()((theme: Theme) => ({
+  card: {
+    borderRadius: theme.spacing(1),
+    boxShadow: theme.shadows[1],
+    transition: theme.transitions.create(['box-shadow', 'transform'], {
+      duration: theme.transitions.duration.short,
+    }),
+    border: `1px solid ${theme.palette.divider}`,
+    '&:hover': {
+      boxShadow: theme.shadows[4],
+      transform: 'translateY(-2px)',
+    },
+  },
+  
+  cardHealthy: {
+    borderLeftColor: theme.palette.success.main,
+    borderLeftWidth: 4,
+    borderLeftStyle: 'solid',
+  },
+  
+  cardWarning: {
+    borderLeftColor: theme.palette.warning.main,
+    borderLeftWidth: 4,
+    borderLeftStyle: 'solid',
+  },
+  
+  cardCritical: {
+    borderLeftColor: theme.palette.error.main,
+    borderLeftWidth: 4,
+    borderLeftStyle: 'solid',
+  },
+  
+  cardContent: {
+    padding: theme.spacing(3),
+    '&:last-child': {
+      paddingBottom: theme.spacing(3),
+    },
+  },
+  
+  header: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: theme.spacing(2),
+  },
+  
+  title: {
+    color: theme.palette.text.secondary,
+    fontSize: '0.875rem',
+    fontWeight: 500,
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px',
+  },
+  
+  iconContainer: {
+    color: theme.palette.text.secondary,
+    display: 'flex',
+    alignItems: 'center',
+  },
+  
+  valueContainer: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+  },
+  
+  value: {
+    fontSize: '2rem',
+    fontWeight: 700,
+    color: theme.palette.text.primary,
+    lineHeight: 1.2,
+  },
+  
+  trendChip: {
+    height: 24,
+    fontSize: '0.75rem',
+    fontWeight: 600,
+  },
+  
+  trendUp: {
+    backgroundColor: theme.palette.success.light,
+    color: theme.palette.success.contrastText,
+    '& .MuiChip-icon': {
+      color: theme.palette.success.contrastText,
+    },
+  },
+  
+  trendDown: {
+    backgroundColor: theme.palette.error.light,
+    color: theme.palette.error.contrastText,
+    '& .MuiChip-icon': {
+      color: theme.palette.error.contrastText,
+    },
+  },
+  
+  trendStable: {
+    backgroundColor: theme.palette.grey[200],
+    color: theme.palette.text.secondary,
+    '& .MuiChip-icon': {
+      color: theme.palette.text.secondary,
+    },
+  },
+}))
+
+// components/kpis/KPICard.tsx
+import { useKPICardStyles } from './KPICard.style'
+import { 
+  Card, 
+  CardContent, 
+  Typography, 
+  Box,
+  Chip
+} from '@jda/lui-common-component-library-mui5'
+import { 
+  TrendingUpIcon, 
+  TrendingDownIcon, 
+  TrendingFlatIcon 
+} from '@jda/lui-common-icon-library-mui5'
+
+const KPICard: React.FC<KPICardProps> = ({
+  title,
+  value,
+  trend,
+  status = 'healthy',
+  icon,
+  onClick
+}) => {
+  const { classes, cx } = useKPICardStyles()
+  
+  const getStatusClass = () => {
+    switch (status) {
+      case 'critical': return classes.cardCritical
+      case 'warning': return classes.cardWarning
+      default: return classes.cardHealthy
+    }
+  }
+
+  const getTrendIcon = () => {
+    switch (trend?.direction) {
+      case 'up': return <TrendingUpIcon />
+      case 'down': return <TrendingDownIcon />
+      default: return <TrendingFlatIcon />
+    }
+  }
+
+  const getTrendClass = () => {
+    switch (trend?.direction) {
+      case 'up': return classes.trendUp
+      case 'down': return classes.trendDown
+      default: return classes.trendStable
+    }
+  }
+
+  return (
+    <Card 
+      className={cx(classes.card, getStatusClass())}
+      onClick={onClick}
+      style={{ cursor: onClick ? 'pointer' : 'default' }}
+    >
+      <CardContent className={classes.cardContent}>
+        <Box className={classes.header}>
+          <Typography className={classes.title}>
+            {title}
+          </Typography>
+          {icon && (
+            <Box className={classes.iconContainer}>
+              {icon}
+            </Box>
+          )}
+        </Box>
+        
+        <Box className={classes.valueContainer}>
+          <Typography className={classes.value}>
+            {typeof value === 'number' ? value.toLocaleString() : value}
+          </Typography>
+          
+          {trend && (
+            <Chip
+              icon={getTrendIcon()}
+              label={`${trend.percentage}%`}
+              size="small"
+              className={cx(classes.trendChip, getTrendClass())}
+            />
+          )}
+        </Box>
+      </CardContent>
+    </Card>
+  )
+}
+```
+
+#### 2. Customer Table Styling with JDA LUI Palette
+
+```typescript
+// components/customers/CustomerTable.style.ts
+import { makeStyles } from 'tss-react/mui'
+import { Theme } from '@jda/lui-common-component-library-mui5'
+
+export const useCustomerTableStyles = makeStyles()((theme: Theme) => ({
+  tableContainer: {
+    borderRadius: theme.spacing(1),
+    boxShadow: theme.shadows[1],
+    border: `1px solid ${theme.palette.divider}`,
+  },
+  
+  table: {
+    minWidth: 650,
+  },
+  
+  tableHead: {
+    backgroundColor: theme.palette.grey[50],
+  },
+  
+  tableHeadCell: {
+    fontWeight: 600,
+    color: theme.palette.text.primary,
+    borderBottom: `2px solid ${theme.palette.divider}`,
+    padding: theme.spacing(2),
+  },
+  
+  tableRow: {
+    '&:nth-of-type(odd)': {
+      backgroundColor: theme.palette.action.hover,
+    },
+    '&:hover': {
+      backgroundColor: theme.palette.action.selected,
+    },
+    transition: theme.transitions.create('background-color', {
+      duration: theme.transitions.duration.shortest,
+    }),
+  },
+  
+  tableCell: {
+    padding: theme.spacing(2),
+    borderBottom: `1px solid ${theme.palette.divider}`,
+  },
+  
+  customerButton: {
+    textTransform: 'none',
+    justifyContent: 'flex-start',
+    color: theme.palette.primary.main,
+    fontWeight: 500,
+    '&:hover': {
+      backgroundColor: theme.palette.primary.light + '20',
+    },
+  },
+  
+  industryChip: {
+    backgroundColor: theme.palette.info.light,
+    color: theme.palette.info.contrastText,
+    fontWeight: 500,
+  },
+  
+  subscriptionChip: {
+    margin: theme.spacing(0.25),
+    backgroundColor: theme.palette.secondary.light,
+    color: theme.palette.secondary.contrastText,
+  },
+  
+  alertChipCritical: {
+    backgroundColor: theme.palette.error.main,
+    color: theme.palette.error.contrastText,
+    fontWeight: 600,
+  },
+  
+  alertChipHigh: {
+    backgroundColor: theme.palette.warning.main,
+    color: theme.palette.warning.contrastText,
+    fontWeight: 600,
+  },
+  
+  alertChipDefault: {
+    backgroundColor: theme.palette.grey[300],
+    color: theme.palette.text.primary,
+  },
+  
+  skeletonRow: {
+    height: 73, // Standard table row height
+  },
+}))
+```
+
+#### 3. Chart Container Styling with JDA LUI Palette
+
+```typescript
+// components/charts/TimeSeriesChart.style.ts
+import { makeStyles } from 'tss-react/mui'
+import { Theme } from '@jda/lui-common-component-library-mui5'
+
+export const useTimeSeriesChartStyles = makeStyles()((theme: Theme) => ({
+  chartContainer: {
+    backgroundColor: theme.palette.background.paper,
+    borderRadius: theme.spacing(1),
+    boxShadow: theme.shadows[1],
+    border: `1px solid ${theme.palette.divider}`,
+    padding: theme.spacing(2),
+    position: 'relative',
+  },
+  
+  chartHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: theme.spacing(2),
+    paddingBottom: theme.spacing(1),
+    borderBottom: `1px solid ${theme.palette.divider}`,
+  },
+  
+  chartTitle: {
+    fontSize: '1.125rem',
+    fontWeight: 600,
+    color: theme.palette.text.primary,
+  },
+  
+  chartControls: {
+    display: 'flex',
+    gap: theme.spacing(1),
+  },
+  
+  controlButton: {
+    minWidth: 'auto',
+    padding: theme.spacing(0.5, 1),
+    fontSize: '0.75rem',
+    color: theme.palette.text.secondary,
+    border: `1px solid ${theme.palette.divider}`,
+    '&:hover': {
+      backgroundColor: theme.palette.action.hover,
+      borderColor: theme.palette.primary.main,
+    },
+  },
+  
+  activeControlButton: {
+    backgroundColor: theme.palette.primary.main,
+    color: theme.palette.primary.contrastText,
+    borderColor: theme.palette.primary.main,
+    '&:hover': {
+      backgroundColor: theme.palette.primary.dark,
+    },
+  },
+  
+  violationIndicator: {
+    position: 'absolute',
+    top: theme.spacing(1),
+    right: theme.spacing(1),
+    backgroundColor: theme.palette.error.main,
+    color: theme.palette.error.contrastText,
+    borderRadius: '50%',
+    width: 24,
+    height: 24,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: '0.75rem',
+    fontWeight: 600,
+    zIndex: 1,
+  },
+  
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: theme.palette.background.paper + 'CC',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: theme.spacing(1),
+    zIndex: 2,
+  },
+}))
+```
+
+#### 4. Form Components Styling with JDA LUI Palette
+
+```typescript
+// components/forms/CustomerFilters.style.ts
+import { makeStyles } from 'tss-react/mui'
+import { Theme } from '@jda/lui-common-component-library-mui5'
+
+export const useCustomerFiltersStyles = makeStyles()((theme: Theme) => ({
+  filterContainer: {
+    backgroundColor: theme.palette.background.paper,
+    borderRadius: theme.spacing(1),
+    boxShadow: theme.shadows[1],
+    border: `1px solid ${theme.palette.divider}`,
+    padding: theme.spacing(3),
+    marginBottom: theme.spacing(3),
+  },
+  
+  filtersRow: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: theme.spacing(2),
+    alignItems: 'center',
+  },
+  
+  searchField: {
+    minWidth: 250,
+    '& .MuiOutlinedInput-root': {
+      backgroundColor: theme.palette.background.default,
+      '&:hover .MuiOutlinedInput-notchedOutline': {
+        borderColor: theme.palette.primary.main,
+      },
+      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+        borderColor: theme.palette.primary.main,
+        borderWidth: 2,
+      },
+    },
+    '& .MuiInputAdornment-root': {
+      color: theme.palette.text.secondary,
+    },
+  },
+  
+  filterSelect: {
+    minWidth: 150,
+    '& .MuiOutlinedInput-root': {
+      backgroundColor: theme.palette.background.default,
+    },
+    '& .MuiInputLabel-root': {
+      color: theme.palette.text.secondary,
+      '&.Mui-focused': {
+        color: theme.palette.primary.main,
+      },
+    },
+  },
+  
+  clearButton: {
+    marginLeft: 'auto',
+    color: theme.palette.text.secondary,
+    borderColor: theme.palette.divider,
+    '&:hover': {
+      backgroundColor: theme.palette.action.hover,
+      borderColor: theme.palette.text.secondary,
+    },
+  },
+  
+  activeFiltersCount: {
+    backgroundColor: theme.palette.primary.main,
+    color: theme.palette.primary.contrastText,
+    fontSize: '0.75rem',
+    fontWeight: 600,
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: theme.spacing(1),
+  },
+}))
+```
+
+### Theme Provider Setup
+
+```typescript
+// App.tsx
+import { ThemeProvider } from '@jda/lui-common-component-library-mui5'
+import { jdaTheme } from './theme/jdaTheme'
+
+function App() {
+  return (
+    <ThemeProvider theme={jdaTheme}>
+      <CssBaseline />
+      <Router>
+        <Routes>
+          {/* Your routes */}
+        </Routes>
+      </Router>
+    </ThemeProvider>
+  )
+}
+```
+
+### Responsive Design with JDA LUI Breakpoints
+
+```typescript
+// hooks/useResponsive.ts
+import { useMediaQuery, useTheme } from '@jda/lui-common-component-library-mui5'
+
+export const useResponsive = () => {
+  const theme = useTheme()
+  
+  return {
+    isMobile: useMediaQuery(theme.breakpoints.down('sm')),
+    isTablet: useMediaQuery(theme.breakpoints.between('sm', 'md')),
+    isDesktop: useMediaQuery(theme.breakpoints.up('md')),
+    isLargeScreen: useMediaQuery(theme.breakpoints.up('lg')),
+  }
+}
+
+// Usage in components
+const CustomerTable: React.FC = () => {
+  const { classes } = useCustomerTableStyles()
+  const { isMobile, isTablet } = useResponsive()
+  
+  return (
+    <TableContainer 
+      className={classes.tableContainer}
+      sx={{
+        overflowX: isMobile ? 'auto' : 'visible',
+        maxWidth: isTablet ? '100vw' : 'none',
+      }}
+    >
+      {/* Table content */}
+    </TableContainer>
+  )
+}
 ```
 
 ### Memoization and Optimization

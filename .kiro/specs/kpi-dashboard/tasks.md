@@ -29,12 +29,13 @@
 
 ## Phase 2: Design System & Core Components
 
-- [ ] 2.1 Implement Design System Foundation
-  - Configure Tailwind CSS with custom design tokens
-  - Create color palette and typography scale
-  - Implement responsive breakpoints and spacing system
-  - Set up dark/light theme support
-  - Create CSS custom properties for dynamic theming
+- [ ] 2.1 Implement Design System Foundation using JDA LUI Palette and tss-react/mui
+  - Configure tss-react/mui for component styling with JDA LUI theme integration and makeStyles
+  - Create component-level style.ts files using JDA LUI palette colors (primary, secondary, success, warning, error, info, grey)
+  - Set up JDA LUI ThemeProvider with custom theme configuration including palette, typography, spacing, and breakpoints
+  - Implement responsive design using JDA LUI theme breakpoints (xs, sm, md, lg, xl) with useMediaQuery
+  - Create reusable styled classes using makeStyles from tss-react/mui with JDA LUI theme access
+  - Set up dark/light theme support using JDA LUI theme variants and CSS custom properties
   - _Requirements: 7.1_
 
 - [ ] 2.2 Build Core UI Components using JDA LUI Libraries
@@ -82,29 +83,34 @@
 
 ## Phase 4: Customer List Dashboard
 
-- [ ] 4.1 Build KPI Cards Component using JDA LUI
+- [ ] 4.1 Build KPI Cards Component using JDA LUI with tss-react/mui Styling
   - Create KPICard component using JDA LUI Card, CardContent with trend indicators
-  - Use JDA LUI Grid and Box components for responsive grid layout
-  - Add click handlers for KPI drill-down functionality using JDA LUI Button
-  - Create loading states using JDA LUI Skeleton and CircularProgress components
-  - Implement real-time KPI updates with JDA LUI Chip for trend indicators
-  - Use JDA LUI icons from @jda/lui-common-icon-library-mui5 for KPI icons
+  - Create KPICard.style.ts file using makeStyles with JDA LUI palette colors (success, warning, error for status indicators)
+  - Use JDA LUI Grid and Box components for responsive grid layout with theme breakpoints
+  - Add click handlers for KPI drill-down functionality using JDA LUI Button with hover styles from makeStyles
+  - Create loading states using JDA LUI Skeleton and CircularProgress components with custom styling
+  - Implement real-time KPI updates with JDA LUI Chip for trend indicators using palette colors for up/down trends
+  - Use JDA LUI icons from @jda/lui-common-icon-library-mui5 for KPI icons with theme-based colors
   - _Requirements: 2.1, 2.2, 2.3, 2.4_
 
-- [ ] 4.2 Implement Customer Search and Filters using JDA LUI
+- [ ] 4.2 Implement Customer Search and Filters using JDA LUI with tss-react/mui Styling
   - Create SearchBar component using JDA LUI TextField with debounced input and SearchIcon
+  - Create CustomerFilters.style.ts file using makeStyles with JDA LUI palette for form styling and hover states
   - Build FilterBar using JDA LUI FormControl, Select, MenuItem for industry, status, and alert level filters
-  - Implement multi-select filter components using JDA LUI Autocomplete and Chip components
+  - Implement multi-select filter components using JDA LUI Autocomplete and Chip components with custom chip styling
   - Add filter persistence in URL parameters with JDA LUI components state management
-  - Create filter reset and clear functionality using JDA LUI Button with ClearIcon
+  - Create filter reset and clear functionality using JDA LUI Button with ClearIcon and custom button styling
+  - Apply JDA LUI theme colors for active filters, focus states, and validation feedback
   - _Requirements: 1.4, 7.1_
 
-- [ ] 4.3 Build Customer Table Component using JDA LUI
+- [ ] 4.3 Build Customer Table Component using JDA LUI with tss-react/mui Styling
   - Create CustomerTable using JDA LUI Table, TableHead, TableBody, TableRow, TableCell with sortable columns
-  - Implement customer name links using JDA LUI Button with navigation
-  - Add industry badges using JDA LUI Chip components and subscription displays
-  - Create alert count badges using JDA LUI Badge and Chip with color coding
-  - Implement table pagination using JDA LUI TablePagination and row selection with Checkbox
+  - Create CustomerTable.style.ts file using makeStyles with JDA LUI palette for table styling, hover states, and row striping
+  - Implement customer name links using JDA LUI Button with navigation and custom button styling from makeStyles
+  - Add industry badges using JDA LUI Chip components with custom chip styling using JDA LUI palette colors
+  - Create alert count badges using JDA LUI Badge and Chip with color coding based on severity (error, warning, success palette colors)
+  - Implement table pagination using JDA LUI TablePagination and row selection with Checkbox using theme colors
+  - Apply responsive table styling using JDA LUI theme breakpoints and makeStyles for mobile optimization
   - _Requirements: 1.1, 1.2, 1.3, 7.1_
 
 - [ ] 4.4 Create Customer List Page
@@ -117,20 +123,24 @@
 
 ## Phase 5: Customer Detail Dashboard
 
-- [ ] 5.1 Build Customer Header Component using JDA LUI
+- [ ] 5.1 Build Customer Header Component using JDA LUI with tss-react/mui Styling
   - Create customer detail header using JDA LUI Breadcrumbs component for navigation
-  - Implement customer ID and name display using JDA LUI Typography and Box components
-  - Add export data button using JDA LUI Button with Menu and MenuItem for dropdown options
-  - Create notification bell using JDA LUI IconButton with Badge and NotificationsIcon
-  - Implement responsive header layout using JDA LUI Grid and AppBar components
+  - Create CustomerHeader.style.ts file using makeStyles with JDA LUI palette for header styling and responsive layout
+  - Implement customer ID and name display using JDA LUI Typography and Box components with custom typography styling
+  - Add export data button using JDA LUI Button with Menu and MenuItem for dropdown options with custom button styling
+  - Create notification bell using JDA LUI IconButton with Badge and NotificationsIcon using theme colors for badge
+  - Implement responsive header layout using JDA LUI Grid and AppBar components with breakpoint-based styling
+  - Apply JDA LUI theme colors for header background, text colors, and interactive elements
   - _Requirements: 3.1, 3.2, 6.1, 6.2, 7.1_
 
-- [ ] 5.2 Create Alert Banner Component using JDA LUI
+- [ ] 5.2 Create Alert Banner Component using JDA LUI with tss-react/mui Styling
   - Build dismissible alert banner using JDA LUI Alert component for KPI status
-  - Implement dynamic content based on alert count using JDA LUI Typography
-  - Add close button using JDA LUI IconButton with CloseIcon and state persistence
-  - Create different alert severity styles using JDA LUI Alert severity variants
-  - Implement banner animation and transitions using JDA LUI Collapse component
+  - Create AlertBanner.style.ts file using makeStyles with JDA LUI palette colors for different alert severities
+  - Implement dynamic content based on alert count using JDA LUI Typography with custom styling
+  - Add close button using JDA LUI IconButton with CloseIcon and state persistence with hover effects
+  - Create different alert severity styles using JDA LUI Alert severity variants and custom makeStyles classes
+  - Implement banner animation and transitions using JDA LUI Collapse component with custom transition styling
+  - Apply JDA LUI theme colors for alert backgrounds, borders, and text based on severity levels
   - _Requirements: 3.3, 5.1, 5.2_
 
 - [ ] 5.3 Implement What's New Section using JDA LUI
